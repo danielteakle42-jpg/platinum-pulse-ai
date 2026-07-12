@@ -7,7 +7,7 @@ import {
   LockKeyhole,
   ShieldCheck,
 } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { createClient } from "@/lib/supabase/client";
 
 export default function ResetPasswordPage() {
@@ -15,13 +15,63 @@ export default function ResetPasswordPage() {
   const [confirmPassword, setConfirmPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(
+    "Checking your password reset link..."
+  );
   const [loading, setLoading] = useState(false);
+  const [sessionReady, setSessionReady] = useState(false);
 
-  const supabase = createClient();
+  useEffect(() => {
+    const supabase = createClient();
+
+    async function prepareResetSession() {
+      const searchParams = new URLSearchParams(window.location.search);
+      const code = searchParams.get("code");
+
+      if (code) {
+        const { error } =
+          await supabase.auth.exchangeCodeForSession(code);
+
+        if (error) {
+          setMessage(
+            "This password reset link is invalid or has expired. Please request a new one."
+          );
+          return;
+        }
+
+        setSessionReady(true);
+        setMessage("");
+
+        window.history.replaceState(
+          {},
+          document.title,
+          "/reset-password"
+        );
+
+        return;
+      }
+
+      const {
+        data: { session },
+        error,
+      } = await supabase.auth.getSession();
+
+      if (error || !session) {
+        setMessage(
+          "This password reset link is missing or has expired. Please request a new one."
+        );
+        return;
+      }
+
+      setSessionReady(true);
+      setMessage("");
+    }
+
+    void prepareResetSession();
+  }, []);
 
   async function updatePassword() {
-    if (loading) return;
+    if (loading || !sessionReady) return;
 
     setMessage("");
 
@@ -42,6 +92,8 @@ export default function ResetPasswordPage() {
 
     setLoading(true);
 
+    const supabase = createClient();
+
     const { error } = await supabase.auth.updateUser({
       password,
     });
@@ -54,14 +106,16 @@ export default function ResetPasswordPage() {
 
     setMessage("Password updated successfully. Redirecting to login...");
 
-    setTimeout(async () => {
+    window.setTimeout(async () => {
       await supabase.auth.signOut();
       window.location.assign("/login");
     }, 1500);
   }
 
-  function handleKeyDown(event: React.KeyboardEvent<HTMLInputElement>) {
-    if (event.key === "Enter") {
+  function handleKeyDown(
+    event: React.KeyboardEvent<HTMLInputElement>
+  ) {
+    if (event.key === "Enter" && sessionReady) {
       void updatePassword();
     }
   }
@@ -97,20 +151,33 @@ export default function ResetPasswordPage() {
               value={password}
               onChange={(event) => {
                 setPassword(event.target.value);
-                if (message) setMessage("");
+
+                if (sessionReady && message) {
+                  setMessage("");
+                }
               }}
               onKeyDown={handleKeyDown}
               placeholder="Minimum 6 characters"
               autoComplete="new-password"
+              disabled={!sessionReady || loading}
             />
 
             <button
               className="eye"
               type="button"
-              onClick={() => setShowPassword((current) => !current)}
-              aria-label={showPassword ? "Hide password" : "Show password"}
+              onClick={() =>
+                setShowPassword((current) => !current)
+              }
+              aria-label={
+                showPassword ? "Hide password" : "Show password"
+              }
+              disabled={!sessionReady || loading}
             >
-              {showPassword ? <EyeOff size={17} /> : <Eye size={17} />}
+              {showPassword ? (
+                <EyeOff size={17} />
+              ) : (
+                <Eye size={17} />
+              )}
             </button>
           </div>
         </label>
@@ -126,11 +193,15 @@ export default function ResetPasswordPage() {
               value={confirmPassword}
               onChange={(event) => {
                 setConfirmPassword(event.target.value);
-                if (message) setMessage("");
+
+                if (sessionReady && message) {
+                  setMessage("");
+                }
               }}
               onKeyDown={handleKeyDown}
               placeholder="Repeat your new password"
               autoComplete="new-password"
+              disabled={!sessionReady || loading}
             />
 
             <button
@@ -144,6 +215,7 @@ export default function ResetPasswordPage() {
                   ? "Hide confirmation password"
                   : "Show confirmation password"
               }
+              disabled={!sessionReady || loading}
             >
               {showConfirmPassword ? (
                 <EyeOff size={17} />
@@ -154,15 +226,26 @@ export default function ResetPasswordPage() {
           </div>
         </label>
 
-        {message && <div className="auth-message">{message}</div>}
+        {message && (
+          <div className="auth-message">
+            {!sessionReady &&
+              message ===
+                "Checking your password reset link..." && (
+                <Loader2 className="spin" size={16} />
+              )}
+
+            {message}
+          </div>
+        )}
 
         <button
           type="button"
           className="login-primary"
           onClick={updatePassword}
-          disabled={loading}
+          disabled={!sessionReady || loading}
         >
           {loading && <Loader2 className="spin" size={18} />}
+
           {loading ? "Updating password..." : "Update password"}
         </button>
 
