@@ -1,0 +1,14 @@
+Your .env.local file must go in THIS folder, beside package.json.
+
+Windows PowerShell:
+  Copy-Item .env.example .env.local
+
+Then fill in at least:
+  NEXT_PUBLIC_SUPABASE_URL=https://YOUR_PROJECT.supabase.co
+  NEXT_PUBLIC_SUPABASE_ANON_KEY=YOUR_ANON_KEY
+
+Save the file, stop the development server, and run:
+  npm run dev
+
+Do not put .env.local in the outer Downloads folder.
+Do not rename it to .env.local.txt.

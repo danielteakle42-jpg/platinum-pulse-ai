@@ -1,0 +1,21 @@
+PLATINUM PULSE V6 SETUP
+
+[ ] Extract into a fresh folder
+[ ] Copy .env.example to .env.local
+[ ] Add Supabase URL, anon key and service-role key
+[ ] Run supabase/schema.sql in Supabase SQL Editor
+[ ] Add OpenAI and Anthropic keys
+[ ] Add Composio API key and Auth Config IDs
+[ ] Create Stripe Pro product and monthly price
+[ ] Create Stripe Business product and monthly price
+[ ] Add Stripe secret key and both price IDs
+[ ] Add Stripe webhook /api/billing/webhook
+[ ] Add STRIPE_WEBHOOK_SECRET
+[ ] Set ADMIN_EMAILS
+[ ] npm config set registry https://registry.npmjs.org/
+[ ] npm install
+[ ] npm run dev
+[ ] Test Free usage limit
+[ ] Test Pro checkout
+[ ] Test Billing Portal
+[ ] Test subscription cancellation and failed payment
